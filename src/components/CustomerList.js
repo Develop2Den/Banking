@@ -36,8 +36,22 @@ const CustomerList = () => {
   }, []);
 
   const fetchCustomers = async () => {
+
+    // try {
+    //   const response = await axios.get('http://localhost:9000/api/customers');
+    //   console.log('Fetched customers:', response.data);
+    //   // Предположим, что массив клиентов находится в поле `customers`
+    //   if (Array.isArray(response.data.content)) {
+    //     setCustomers(response.data.content);
+    //   } else {
+    //     console.error('Полученные данные не содержат массив клиентов:', response.data);
+    //   }
+    // } catch (error) {
+    //   console.error('Произошла ошибка при загрузке клиентов!', error);
+    // }
     try {
-      const response = await axios.get('http://localhost:9000/customers');
+      const response = await axios.get('http://localhost:9000/api/customers');
+      console.log('Fetched customers:', response.data);
       setCustomers(response.data);
     } catch (error) {
       console.error('There was an error fetching the customers!', error);
@@ -53,7 +67,7 @@ const CustomerList = () => {
 
   const handleDeleteCustomer = async (customerId) => {
     try {
-      await axios.delete(`http://localhost:9000/customers/${customerId}`);
+      await axios.delete(`http://localhost:9000/api/customers/${customerId}`);
       fetchCustomers();
     } catch (error) {
       console.error('There was an error deleting the customer!', error);
@@ -72,7 +86,7 @@ const CustomerList = () => {
 
   const handleSaveCustomer = async () => {
     try {
-      await axios.put(`http://localhost:9000/customers/${editCustomer.id}`, editCustomer);
+      await axios.put(`http://localhost:9000/api/customers/${editCustomer.id}`, editCustomer);
       fetchCustomers();
       handleEditDialogClose();
     } catch (error) {
@@ -91,7 +105,6 @@ const CustomerList = () => {
       setCurrentCustomer(customer);
       setActionType(type);
 
-      // Reset account details based on action type
       if (type === 'deposit' || type === 'withdraw') {
         setAccountDetails({
           fromNumber: customer.accounts.length > 0 ? customer.accounts[0].number : '',
@@ -118,7 +131,7 @@ const CustomerList = () => {
 
   const handleDeposit = async () => {
     try {
-      await axios.put(`http://localhost:9000/accounts/deposit`, null, {
+      await axios.post(`http://localhost:9000/api/accounts/deposit`, null, {
         params: {
           number: accountDetails.fromNumber,
           amount: accountDetails.amount
@@ -133,7 +146,7 @@ const CustomerList = () => {
 
   const handleWithdraw = async () => {
     try {
-      await axios.put(`http://localhost:9000/accounts/withdraw`, null, {
+      await axios.post(`http://localhost:9000/api/accounts/withdraw`, null, {
         params: {
           number: accountDetails.fromNumber,
           amount: accountDetails.amount
@@ -148,7 +161,7 @@ const CustomerList = () => {
 
   const handleTransfer = async () => {
     try {
-      await axios.put(`http://localhost:9000/accounts/transfer`, null, {
+      await axios.post(`http://localhost:9000/api/accounts/transfer`, null, {
         params: {
           fromNumber: accountDetails.fromNumber,
           toNumber: accountDetails.toNumber,
@@ -164,7 +177,8 @@ const CustomerList = () => {
 
   const handleAddAccount = async (customerId, newAccount) => {
     try {
-      await axios.post(`http://localhost:9000/customers/${customerId}/accounts`, newAccount);
+      await axios.post(`http://localhost:9000/api/customers/${customerId}/accounts`, newAccount);
+      console.log('Account added:', newAccount);
       fetchCustomers();
       resetState();
 
@@ -175,7 +189,7 @@ const CustomerList = () => {
 
   const handleDeleteAccount = async (customerId, accountId) => {
     try {
-      await axios.delete(`http://localhost:9000/customers/${customerId}/accounts/${accountId}`);
+      await axios.delete(`http://localhost:9000/api/accounts/${accountId}`);
       fetchCustomers();
     } catch (error) {
       console.error('There was an error deleting the account!', error);
@@ -193,7 +207,7 @@ const CustomerList = () => {
 
   const handleSaveNewCustomer = async () => {
     try {
-      await axios.post('http://localhost:9000/customers', newCustomer);
+      await axios.post('http://localhost:9000/api/customers', newCustomer);
       fetchCustomers();
       handleAddDialogClose();
     } catch (error) {
@@ -300,6 +314,8 @@ const CustomerList = () => {
 };
 
 export default CustomerList;
+
+
 
 
 

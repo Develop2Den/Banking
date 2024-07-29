@@ -1,43 +1,69 @@
 
 import React from 'react';
-import { Dialog, DialogActions, DialogContent, DialogTitle, TextField, Button } from '@mui/material';
+import {
+  Dialog,
+  DialogActions,
+  DialogContent,
+  DialogTitle,
+  TextField,
+  Button,
+} from '@mui/material';
 
-const EditCustomerDialog = ({ open, customer, onClose, onChange, onSave, text }) => {
+const EditCustomerDialog = ({
+                              open,
+                              customer,
+                              onClose,
+                              onSave,
+                              onChange,
+                              addMode = false,
+                            }) => {
   return (
     <Dialog open={open} onClose={onClose}>
-      <DialogTitle>{text}</DialogTitle>
+      <DialogTitle>{addMode ? 'Add Customer' : 'Edit Customer'}</DialogTitle>
       <DialogContent>
         <TextField
-          label="Name"
+          autoFocus
+          margin="dense"
           name="name"
+          label="Name"
+          type="text"
+          fullWidth
           value={customer?.name || ''}
           onChange={onChange}
-          fullWidth
         />
         <TextField
-          label="Email"
+          margin="dense"
           name="email"
+          label="Email"
+          type="email"
+          fullWidth
           value={customer?.email || ''}
           onChange={onChange}
-          fullWidth
         />
         <TextField
-          label="Age"
+          margin="dense"
           name="age"
+          label="Age"
+          type="number"
+          fullWidth
           value={customer?.age || ''}
           onChange={onChange}
-          fullWidth
         />
       </DialogContent>
       <DialogActions>
-        <Button onClick={onClose}>Cancel</Button>
-        <Button onClick={onSave}>Save</Button>
+        <Button onClick={onClose} color="primary">
+          Cancel
+        </Button>
+        <Button onClick={onSave} color="primary">
+          Save
+        </Button>
       </DialogActions>
     </Dialog>
   );
 };
 
 export default EditCustomerDialog;
+
 
 
 
