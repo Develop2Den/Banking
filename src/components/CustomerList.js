@@ -1,5 +1,5 @@
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import axios from 'axios';
 import {
   Table,
@@ -13,9 +13,11 @@ import {
   Collapse,
   Box,
   Button,
+  Pagination,
+  Stack
 } from '@mui/material';
-import { KeyboardArrowDown, KeyboardArrowUp, Delete, Edit } from '@mui/icons-material';
-
+import { KeyboardArrowDown, KeyboardArrowUp, Delete, Edit, Logout } from '@mui/icons-material';
+import { useNavigate } from 'react-router-dom';
 import CustomerDetails from './CustomerDetails';
 import EditCustomerDialog from './EditCustomerDialog';
 
@@ -29,34 +31,52 @@ const CustomerList = () => {
   const [editCustomer, setEditCustomer] = useState(null);
   const [editDialogOpen, setEditDialogOpen] = useState(false);
   const [addDialogOpen, setAddDialogOpen] = useState(false);
-  const [newCustomer, setNewCustomer] = useState({ name: '', email: '', age: '' });
+  const [newCustomer, setNewCustomer] = useState({ name: '', email: '', age: '', phoneNumber: '', password: '' });
+  const [page, setPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
+  const navigate = useNavigate();
+
+  const fetchCustomers = useCallback(async () => {
+    try {
+      const response = await axios.get('http://localhost:9000/api/customers', {
+        withCredentials: true,
+        params: {
+          page: page - 1,
+        }
+      });
+      console.log('Fetched customers:', response.data);
+
+      if (Array.isArray(response.data.content)) {
+        setCustomers(response.data.content);
+        setTotalPages(response.data.totalPages);
+      } else {
+        console.error('Полученные данные не содержат массив клиентов:', response.data);
+      }
+    } catch (error) {
+      console.error('Произошла ошибка при загрузке клиентов!', error);
+    }
+  }, [page]);
 
   useEffect(() => {
     fetchCustomers();
-  }, []);
+  }, [fetchCustomers]);
 
-  const fetchCustomers = async () => {
-
-    // try {
-    //   const response = await axios.get('http://localhost:9000/api/customers');
-    //   console.log('Fetched customers:', response.data);
-    //   // Предположим, что массив клиентов находится в поле `customers`
-    //   if (Array.isArray(response.data.content)) {
-    //     setCustomers(response.data.content);
-    //   } else {
-    //     console.error('Полученные данные не содержат массив клиентов:', response.data);
-    //   }
-    // } catch (error) {
-    //   console.error('Произошла ошибка при загрузке клиентов!', error);
-    // }
+  const handleLogout = async () => {
     try {
-      const response = await axios.get('http://localhost:9000/api/customers');
-      console.log('Fetched customers:', response.data);
-      setCustomers(response.data);
+    const response = await axios.post('http://localhost:9000/api/logout', {}, {
+      withCredentials: true,
+      maxRedirects: 0
+    });
+    if (response.status === 200) {
+      console.log('Logout response:', response);
+      localStorage.removeItem("email");
+      navigate("/");
+    }
     } catch (error) {
-      console.error('There was an error fetching the customers!', error);
+      console.error('Ошибка при выходе из системы:', error.response ? error.response.data : error.message);
     }
   };
+
 
   const handleToggle = (customerId) => {
     setOpen(prevOpen => ({
@@ -67,8 +87,10 @@ const CustomerList = () => {
 
   const handleDeleteCustomer = async (customerId) => {
     try {
-      await axios.delete(`http://localhost:9000/api/customers/${customerId}`);
-      fetchCustomers();
+      await axios.delete(`http://localhost:9000/api/customers/${customerId}`, {
+        withCredentials: true,
+      });
+      await fetchCustomers();
     } catch (error) {
       console.error('There was an error deleting the customer!', error);
     }
@@ -86,7 +108,9 @@ const CustomerList = () => {
 
   const handleSaveCustomer = async () => {
     try {
-      await axios.put(`http://localhost:9000/api/customers/${editCustomer.id}`, editCustomer);
+      await axios.put(`http://localhost:9000/api/customers/${editCustomer.id}`, editCustomer, {
+        withCredentials: true,
+      });
       fetchCustomers();
       handleEditDialogClose();
     } catch (error) {
@@ -132,6 +156,7 @@ const CustomerList = () => {
   const handleDeposit = async () => {
     try {
       await axios.post(`http://localhost:9000/api/accounts/deposit`, null, {
+        withCredentials: true,
         params: {
           number: accountDetails.fromNumber,
           amount: accountDetails.amount
@@ -147,6 +172,7 @@ const CustomerList = () => {
   const handleWithdraw = async () => {
     try {
       await axios.post(`http://localhost:9000/api/accounts/withdraw`, null, {
+        withCredentials: true,
         params: {
           number: accountDetails.fromNumber,
           amount: accountDetails.amount
@@ -162,6 +188,7 @@ const CustomerList = () => {
   const handleTransfer = async () => {
     try {
       await axios.post(`http://localhost:9000/api/accounts/transfer`, null, {
+        withCredentials: true,
         params: {
           fromNumber: accountDetails.fromNumber,
           toNumber: accountDetails.toNumber,
@@ -177,11 +204,12 @@ const CustomerList = () => {
 
   const handleAddAccount = async (customerId, newAccount) => {
     try {
-      await axios.post(`http://localhost:9000/api/customers/${customerId}/accounts`, newAccount);
+      await axios.post(`http://localhost:9000/api/customers/${customerId}/accounts`, newAccount,{
+        withCredentials: true,
+      });
       console.log('Account added:', newAccount);
       fetchCustomers();
       resetState();
-
     } catch (error) {
       console.error('There was an error adding the account!', error);
     }
@@ -189,7 +217,9 @@ const CustomerList = () => {
 
   const handleDeleteAccount = async (customerId, accountId) => {
     try {
-      await axios.delete(`http://localhost:9000/api/accounts/${accountId}`);
+      await axios.delete(`http://localhost:9000/api/accounts/${accountId}`, {
+        withCredentials: true,
+      });
       fetchCustomers();
     } catch (error) {
       console.error('There was an error deleting the account!', error);
@@ -202,12 +232,14 @@ const CustomerList = () => {
 
   const handleAddDialogClose = () => {
     setAddDialogOpen(false);
-    setNewCustomer({ name: '', email: '', age: '' });
+    setNewCustomer({ name: '', email: '', age: '', phoneNumber: '', password: '' });
   };
 
   const handleSaveNewCustomer = async () => {
     try {
-      await axios.post('http://localhost:9000/api/customers', newCustomer);
+      await axios.post('http://localhost:9000/api/customers', newCustomer, {
+        withCredentials: true,
+      });
       fetchCustomers();
       handleAddDialogClose();
     } catch (error) {
@@ -227,72 +259,91 @@ const CustomerList = () => {
     setAccountDetails({ fromNumber: '', toNumber: '', amount: '' });
   };
 
+  const handlePageChange = (event, value) => {
+    setPage(value);
+  };
+
   return (
-    <TableContainer component={Paper}>
-      <Table>
-        <TableHead>
-          <TableRow>
-            <TableCell />
-            <TableCell>Name</TableCell>
-            <TableCell>Email</TableCell>
-            <TableCell>Age</TableCell>
-            <TableCell>Actions</TableCell>
-            <TableCell colSpan={5} align="right">
-              <Button variant="contained" color="primary" onClick={handleAddCustomer}>
-                Add Customer
-              </Button>
-            </TableCell>
-          </TableRow>
-        </TableHead>
-        <TableBody>
-          {customers.map((customer) => (
-            <React.Fragment key={customer.id}>
-              <TableRow>
-                <TableCell>
-                  <IconButton aria-label="expand row" size="small" onClick={() => handleToggle(customer.id)}>
-                    {open[customer.id] ? <KeyboardArrowUp /> : <KeyboardArrowDown />}
-                  </IconButton>
-                </TableCell>
-                <TableCell>{customer.name}</TableCell>
-                <TableCell>{customer.email}</TableCell>
-                <TableCell>{customer.age}</TableCell>
-                <TableCell>
-                  <IconButton aria-label="edit" onClick={() => handleEditCustomer(customer)}>
-                    <Edit />
-                  </IconButton>
-                  <IconButton aria-label="delete" onClick={() => handleDeleteCustomer(customer.id)}>
-                    <Delete />
-                  </IconButton>
-                  <Button onClick={() => handleAction('deposit', customer)}  disabled={!open[customer.id]}>Deposit</Button>
-                  <Button onClick={() => handleAction('withdraw', customer)} disabled={!open[customer.id]}>Withdraw</Button>
-                  <Button onClick={() => handleAction('transfer', customer)} disabled={!open[customer.id]}>Transfer</Button>
-                  <Button onClick={() => handleAction('addAccount', customer)} disabled={!open[customer.id]}>Add Account</Button>
-                </TableCell>
-              </TableRow>
-              <TableRow>
-                <TableCell style={{ paddingBottom: 0, paddingTop: 0 }} colSpan={5}>
-                  <Collapse in={open[customer.id]} timeout="auto" unmountOnExit>
-                    <Box margin={1}>
-                      <CustomerDetails
-                        customer={customer}
-                        editMode={editMode && currentCustomer && currentCustomer.id === customer.id}
-                        actionType={actionType}
-                        accountDetails={accountDetails}
-                        handleAccountChange={handleAccountChange}
-                        handleDeposit={handleDeposit}
-                        handleWithdraw={handleWithdraw}
-                        handleTransfer={handleTransfer}
-                        handleAddAccount={handleAddAccount}
-                        handleDeleteAccount={handleDeleteAccount}
-                      />
-                    </Box>
-                  </Collapse>
-                </TableCell>
-              </TableRow>
-            </React.Fragment>
-          ))}
-        </TableBody>
-      </Table>
+    <div>
+      <Box sx={{ display: 'flex', justifyContent: 'flex-end', marginBottom: 2, marginTop: 2, marginRight: 5 }}>
+        <Button variant="contained" color="primary" onClick={handleLogout} startIcon={<Logout />}>
+          Logout
+        </Button>
+      </Box>
+      <TableContainer component={Paper}>
+        <Table>
+          <TableHead>
+            <TableRow>
+              <TableCell />
+              <TableCell>Name</TableCell>
+              <TableCell>Email</TableCell>
+              <TableCell>Age</TableCell>
+              <TableCell>Actions</TableCell>
+              <TableCell colSpan={5} align="right">
+                <Button variant="contained" color="primary" onClick={handleAddCustomer}>
+                  Add Customer
+                </Button>
+              </TableCell>
+            </TableRow>
+          </TableHead>
+          <TableBody>
+            {customers.map((customer) => (
+              <React.Fragment key={customer.id}>
+                <TableRow>
+                  <TableCell>
+                    <IconButton aria-label="expand row" size="small" onClick={() => handleToggle(customer.id)}>
+                      {open[customer.id] ? <KeyboardArrowUp /> : <KeyboardArrowDown />}
+                    </IconButton>
+                  </TableCell>
+                  <TableCell>{customer.name}</TableCell>
+                  <TableCell>{customer.email}</TableCell>
+                  <TableCell>{customer.age}</TableCell>
+                  <TableCell>
+                    <IconButton aria-label="edit" onClick={() => handleEditCustomer(customer)}>
+                      <Edit />
+                    </IconButton>
+                    <IconButton aria-label="delete" onClick={() => handleDeleteCustomer(customer.id)}>
+                      <Delete />
+                    </IconButton>
+                    <Button onClick={() => handleAction('deposit', customer)} disabled={!open[customer.id]}>Deposit</Button>
+                    <Button onClick={() => handleAction('withdraw', customer)} disabled={!open[customer.id]}>Withdraw</Button>
+                    <Button onClick={() => handleAction('transfer', customer)} disabled={!open[customer.id]}>Transfer</Button>
+                    <Button onClick={() => handleAction('addAccount', customer)} disabled={!open[customer.id]}>Add Account</Button>
+                  </TableCell>
+                </TableRow>
+                <TableRow>
+                  <TableCell style={{ paddingBottom: 0, paddingTop: 0 }} colSpan={5}>
+                    <Collapse in={open[customer.id]} timeout="auto" unmountOnExit>
+                      <Box margin={1}>
+                        <CustomerDetails
+                          customer={customer}
+                          editMode={editMode && currentCustomer && currentCustomer.id === customer.id}
+                          actionType={actionType}
+                          accountDetails={accountDetails}
+                          handleAccountChange={handleAccountChange}
+                          handleDeposit={handleDeposit}
+                          handleWithdraw={handleWithdraw}
+                          handleTransfer={handleTransfer}
+                          handleAddAccount={handleAddAccount}
+                          handleDeleteAccount={handleDeleteAccount}
+                        />
+                      </Box>
+                    </Collapse>
+                  </TableCell>
+                </TableRow>
+              </React.Fragment>
+            ))}
+          </TableBody>
+        </Table>
+      </TableContainer>
+      <Stack spacing={2} sx={{ marginTop: 2, marginBottom: 2, alignItems: 'center' }}>
+        <Pagination
+          count={totalPages}
+          page={page}
+          onChange={handlePageChange}
+          color="primary"
+        />
+      </Stack>
       <EditCustomerDialog
         open={addDialogOpen}
         customer={newCustomer}
@@ -309,11 +360,14 @@ const CustomerList = () => {
         onChange={handleChangeEditCustomer}
         text={"Edit Customer"}
       />
-    </TableContainer>
+    </div>
   );
 };
 
 export default CustomerList;
+
+
+
 
 
 
