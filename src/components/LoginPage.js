@@ -111,7 +111,9 @@ const LoginPage = () => {
         }
       );
       if (response.status === 200) {
-        localStorage.setItem("email", email)
+        const id = response.data.content[0].id
+        localStorage.setItem("email", email);
+        localStorage.setItem("ID", id);
           navigate('/customers');
 
       } else {

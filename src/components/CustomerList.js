@@ -1,6 +1,8 @@
 
 import React, { useState, useEffect, useCallback } from 'react';
 import axios from 'axios';
+import { Client } from '@stomp/stompjs';
+import SockJS from 'sockjs-client';
 import {
   Table,
   TableBody,
@@ -36,6 +38,28 @@ const CustomerList = () => {
   const [totalPages, setTotalPages] = useState(1);
   const navigate = useNavigate();
 
+  useEffect(() => {
+    const socketUrl = 'http://localhost:9000/ws';
+    const stompClient = new Client({
+      webSocketFactory: () => new SockJS(socketUrl),
+      reconnectDelay: 5000,
+      onConnect: () => {
+        console.log('Connected');
+        const userId = localStorage.getItem("ID");
+        console.log(userId);
+        stompClient.subscribe(`/topic/account-updates/${userId}`, (message) => {
+          console.log('Received: ', message.body);
+        });
+      },
+    });
+
+    stompClient.activate();
+
+    return () => {
+      stompClient.deactivate();
+    };
+  }, []);
+
   const fetchCustomers = useCallback(async () => {
     try {
       const response = await axios.get('http://localhost:9000/api/customers', {
@@ -70,6 +94,7 @@ const CustomerList = () => {
     if (response.status === 200) {
       console.log('Logout response:', response);
       localStorage.removeItem("email");
+      localStorage.removeItem("ID");
       navigate("/");
     }
     } catch (error) {
@@ -163,7 +188,7 @@ const CustomerList = () => {
         }
       });
       fetchCustomers();
-      resetState(); // Reset state after successful action
+      resetState();
     } catch (error) {
       console.error('There was an error depositing to the account!', error);
     }
@@ -179,7 +204,7 @@ const CustomerList = () => {
         }
       });
       fetchCustomers();
-      resetState(); // Reset state after successful action
+      resetState();
     } catch (error) {
       console.error('There was an error withdrawing from the account!', error);
     }
@@ -220,6 +245,7 @@ const CustomerList = () => {
       await axios.delete(`http://localhost:9000/api/accounts/${accountId}`, {
         withCredentials: true,
       });
+      console.log('Account DELETED');
       fetchCustomers();
     } catch (error) {
       console.error('There was an error deleting the account!', error);
